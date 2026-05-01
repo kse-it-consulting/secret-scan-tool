@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
+        with:
+          python-version: "3.12"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run unit + e2e tests
+        run: python -m pytest tests/ -v
+
+  docker:
+    needs: test
+    if: github.event_name == 'push'
+    uses: kse-it-consulting/kse-labs-trusted-workflows/.github/workflows/docker-build.yaml@main
+    with:
+      image-name: secret-scan-tool
+      push: true
+      tags: "${{ github.sha }},latest"
+    permissions:
+      contents: read
+      packages: write
